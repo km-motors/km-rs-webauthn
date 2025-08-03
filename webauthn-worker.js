@@ -52,21 +52,21 @@ async function handleGenerateRegistrationOptions(request, env) {
   
   const options = {
     rp: {
-      name: env.RP_NAME || 'Your App',
-      id: env.RP_ID
+      name: env.RP_NAME || 'KM-RS',
+      id: env.RP_ID || 'fwzj3p7v-5173.use.devtunnels.ms'
     },
     user: {
       id: stringToBuffer(userId),
       name: username,
       displayName: displayName
     },
-    challenge: Array.from(challenge), // Send as array for JSON serialization
+    challenge: Array.from(challenge),
     pubKeyCredParams: [
       { alg: -7, type: "public-key" }, // ES256
       { alg: -257, type: "public-key" } // RS256
     ],
     timeout: 60000,
-    attestation: "indirect",
+    attestation: "none", // Changed to none for better compatibility
     excludeCredentials: [],
     authenticatorSelection: {
       authenticatorAttachment: "platform",
@@ -77,7 +77,7 @@ async function handleGenerateRegistrationOptions(request, env) {
 
   const response = new Response(JSON.stringify({
     options,
-    challenge: Array.from(challenge) // Store as array for client-side reconstruction
+    challenge: Array.from(challenge)
   }), {
     headers: { 'Content-Type': 'application/json' }
   });
@@ -89,7 +89,6 @@ async function handleVerifyRegistration(request, env) {
   const { credential, challenge } = await request.json();
   
   try {
-    // Validate required fields
     if (!credential || !credential.id || !credential.response) {
       throw new Error('Invalid registration data');
     }
@@ -121,11 +120,14 @@ async function handleGenerateAuthenticationOptions(request, env) {
   
   const challenge = crypto.getRandomValues(new Uint8Array(32));
   
+  // Filter out invalid credential IDs
+  const validCredentialIds = (credentialIds || []).filter((id) => id && id.length > 0);
+  
   const options = {
-    challenge: Array.from(challenge), // Send as array for JSON serialization
+    challenge: Array.from(challenge),
     timeout: 60000,
     userVerification: "preferred",
-    allowCredentials: (credentialIds || []).map(id => ({
+    allowCredentials: validCredentialIds.map((id) => ({
       id: Array.from(stringToBuffer(id)),
       type: "public-key",
       transports: ["internal", "usb", "nfc", "ble"]
@@ -146,7 +148,6 @@ async function handleVerifyAuthentication(request, env) {
   const { credential, challenge } = await request.json();
   
   try {
-    // Validate required fields
     if (!credential || !credential.id || !credential.response) {
       throw new Error('Invalid authentication data');
     }
