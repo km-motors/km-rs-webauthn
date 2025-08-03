@@ -1,0 +1,7 @@
+name = "webauthn-worker"
+main = "webauthn-worker.js"
+compatibility_date = "2025-08-03"
+
+[vars]
+RP_NAME = "KM-RS"
+RP_ID = "km-rs.pages.dev"
